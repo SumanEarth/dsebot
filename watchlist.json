@@ -1,0 +1,24 @@
+[
+  {
+    "ticker": "SQURPHARMA",
+    "name": "Square Pharmaceuticals",
+    "sector": "Pharmaceuticals",
+    "eps": 18.5,
+    "nav_per_share": 145.0,
+    "dividend_yield": 3.2,
+    "sector_pe": 16,
+    "conviction": 3,
+    "notes": ""
+  },
+  {
+    "ticker": "GP",
+    "name": "Grameenphone",
+    "sector": "Telecommunication",
+    "eps": 14.2,
+    "nav_per_share": 22.0,
+    "dividend_yield": 7.5,
+    "sector_pe": 12,
+    "conviction": 3,
+    "notes": ""
+  }
+]

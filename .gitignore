@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.env
+sumannote.txt
+README-GITHUB.md
+README.md
