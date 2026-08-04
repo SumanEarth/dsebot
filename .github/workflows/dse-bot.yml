@@ -30,11 +30,15 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           FUNDAMENTAL_WEIGHT: '50'
         run: |
-          case "${{ github.event.schedule }}" in
-            "5 4 * * 0,1,2,3,4") python run_once.py open_summary ;;
-            "35 8 * * 0,1,2,3,4") python run_once.py close_summary ;;
-            *) python run_once.py poll ;;
-          esac
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            python run_once.py poll --force
+          else
+            case "${{ github.event.schedule }}" in
+              "5 4 * * 0,1,2,3,4") python run_once.py open_summary ;;
+              "35 8 * * 0,1,2,3,4") python run_once.py close_summary ;;
+              *) python run_once.py poll ;;
+            esac
+          fi
 
       - name: Save updated price history back to the repo
         run: |

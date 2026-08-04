@@ -40,16 +40,31 @@ def ensure_history():
             scraper.backfill_history(symbol)
 
 
-def poll():
-    if not scraper.is_market_open():
+def poll(force=False):
+    """force=True is used for manual test runs (workflow_dispatch): it
+    skips the market-hours gate and always sends something to Telegram,
+    so you get clear confirmation the pipeline works end to end."""
+    market_open = scraper.is_market_open()
+    if not force and not market_open:
         print("Market closed — skipping poll.")
         return
+
+    if force:
+        note = "" if market_open else " (market is currently closed — using last available data)"
+        notify(f"🔧 Manual test run — checking your watchlist now{note}...")
+
     for meta in WATCHLIST:
         symbol = meta["ticker"]
         live = scraper.update_today(symbol)
         if live is None:
-            print(f"No live data for {symbol}, skipping.")
-            continue
+            print(f"No live data for {symbol}.")
+            if force:
+                if db.count_price_rows(symbol) == 0:
+                    notify(f"⚠️ {symbol}: no price data available yet — backfill may have failed.")
+                    continue
+                # fall through and score using the most recent data already in the DB
+            else:
+                continue
 
         result = analyzer.analyze(meta, WEIGHT)
         if result is None:
@@ -58,12 +73,15 @@ def poll():
         previous = db.get_last_decision(symbol)
         prev_decision = previous["decision"] if previous else None
 
-        if prev_decision != result["decision"]:
+        if force or prev_decision != result["decision"]:
             notify(notifier.format_alert(symbol, meta.get("name", ""), result, prev_decision))
             print(f"{symbol}: {prev_decision} -> {result['decision']}")
 
         db.set_last_decision(symbol, result["decision"], result["final"],
                               datetime.now().isoformat())
+
+    if force:
+        notify("✅ Test complete — Telegram delivery and DSE data access are both working.")
 
 
 def summary(title: str):
@@ -81,9 +99,12 @@ if __name__ == "__main__":
     db.init_db()
     ensure_history()
 
-    mode = sys.argv[1] if len(sys.argv) > 1 else "poll"
+    args = sys.argv[1:]
+    mode = args[0] if args else "poll"
+    force = "--force" in args
+
     if mode == "poll":
-        poll()
+        poll(force=force)
     elif mode == "open_summary":
         summary("📈 Market Open — Watchlist Snapshot")
     elif mode == "close_summary":
